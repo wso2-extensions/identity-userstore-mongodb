@@ -52,9 +52,9 @@ public class MongoDBCaseInsensitiveConstants {
     public static final String DELETE_USER_PROPERTY_CASE_INSENSITIVE = "DeleteUserPropertyMongoCaseInsensitive";
     public static final String USER_NAME_UNIQUE_CASE_INSENSITIVE = "UserNameUniqueAcrossTenantsMongoCaseInsensitive";
     public static final String SELECT_USER_MONGO_CASE_INSENSITIVE =
-            "{'collection' : 'UM_USER','UM_USER_NAME' : {'$regex' : '?','$options' : 'i'},'UM_TENANT_ID' : '?'}";
+            "{'collection' : 'UM_USER','UM_CASE_INSENSITIVE_USER_NAME' : '?','UM_TENANT_ID' : '?'}";
     public static final String GET_USER_FILTER_MONGO_CASE_INSENSITIVE = "{'collection' : 'UM_USER','$match' : " +
-            "{'UM_USER_NAME' : {'$regex' : '?','$options' : 'i'},'UM_TENANT_ID' : '?'},'$sort' : {'UM_USER_NAME' : 1}}";
+            "{'UM_CASE_INSENSITIVE_USER_NAME' : '?','UM_TENANT_ID' : '?'},'$sort' : {'UM_USER_NAME' : 1}, '$limit' : '?'}";
     public static final String GET_USER_ROLE_MONGO_CASE_INSENSITIVE = "{'collection' : 'UM_ROLE',$match : " +
             "{'UM_TENANT_ID' : '?','userRole.UM_TENANT_ID' : '?','users.UM_TENANT_ID' : '?','users.UM_ID' : '?'}," +
             "'$project' : {'UM_ROLE_NAME' : 1,'_id' : 0},'$lookup' : {'from' : 'UM_USER_ROLE','localField' : 'UM_ID'," +
@@ -70,7 +70,7 @@ public class MongoDBCaseInsensitiveConstants {
             "'$lookup_sub' : {'from' : 'UM_ROLE','localField' : 'UM_ROLE_ID','foreignField' : 'UM_ID','as' : " +
             "'roles'},'$unwind_sub' : {'path' : '$roles','preserveNullAndEmptyArrays' : false}}";
     public static final String GET_IS_USER_EXISTING_MONGO_CASE_INSENSITIVE = "{'collection' : 'UM_USER'," +
-            "'UM_USER_NAME' : {'$regex' : '?','$options' : 'i'},'UM_TENANT_ID' : '?','projection' : {'UM_ID' : 1," +
+            "'UM_CASE_INSENSITIVE_USER_NAME' : '?','UM_TENANT_ID' : '?','projection' : {'UM_ID' : 1," +
             "'_id' : 0}}";
     public static final String GET_PROPS_FOR_PROFILE_MONGO_CASE_INSENSITIVE = "{'collection' : 'UM_USER_ATTRIBUTE'," +
             "'$match' : {'UM_PROFILE_ID' : '?','UM_TENANT_ID' : '?','users.UM_USER_NAME' : {'$regex' : '?'," +
@@ -85,8 +85,10 @@ public class MongoDBCaseInsensitiveConstants {
     public static final String GET_PROFILE_NAMES_FOR_USER_MONGO_CASE_INSENSITIVE = "{'collection' : " +
             "'UM_USER_ATTRIBUTE','UM_USER_ID' : '?','projection' : {'UM_PROFILE_ID' : 1,_id : 0},'distinct' : " +
             "'UM_PROFILE_ID'}";
+    public static final String GET_USER_ID_FROM_USERNAME_WITHOUT_MOBILE_MONGO_CASE_INSENSITIVE =
+            "{'collection' : 'UM_USER','UM_CASE_INSENSITIVE_USER_NAME' : '?','UM_TENANT_ID' : '?','projection' : {'UM_ID' : 1}}";
     public static final String GET_USER_ID_FROM_USERNAME_MONGO_CASE_INSENSITIVE =
-            "{'collection' : 'UM_USER','UM_USER_NAME' : {'$regex' : '?','$options' : 'i'},'UM_TENANT_ID' : '?'}";
+            "{'collection' : 'UM_USER_ATTRIBUTE', $or : [{'caseInsensitiveUid' : '?'}, {'mobile' : '?'}],'UM_TENANT_ID' : '?','projection' : {'UM_USER_ID' : 1}}";
     public static final String GET_TENANT_ID_FROM_USERNAME_MONGO_CASE_INSENSITIVE = "{'collection' : 'UM_USER'," +
             "'UM_USER_NAME' : {'$regex' : '?','$option' : 'i'},'projection' : {'UM_TENANT_ID' : 1,_id : 0}}";
     public static final String ADD_USER_TO_ROLE_MONGO_CASE_INSENSITIVE =
@@ -110,11 +112,11 @@ public class MongoDBCaseInsensitiveConstants {
     public static final String ON_DELETE_USER_REMOVE_ATTRIBUTE_MONGO_CASE_INSENSITIVE =
             "{'collection' : 'UM_USER_ATTRIBUTE','UM_USER_ID' : '?',UM_TENANT_ID : '?'}";
     public static final String UPDATE_USER_PASSWORD_MONGO_CASE_INSENSITIVE = "{'collection' : 'UM_USER'," +
-            "'UM_USER_NAME' : {'$regex' : '?','$options' : 'i'},'UM_TENANT_ID' : '?','projection' : {'$set'  : " +
+            "'UM_CASE_INSENSITIVE_USER_NAME' : '?','UM_TENANT_ID' : '?','projection' : {'$set'  : " +
             "{'UM_USER_PASSWORD' : '?','UM_SALT_VALUE' : '?','UM_REQUIRE_CHANGE' : '?','UM_CHANGED_TIME' : '?'}}}";
     public static final String UPDATE_USER_PROPERTY_MONGO_CASE_INSENSITIVE = "{'collection' : 'UM_USER_ATTRIBUTE'," +
             "'UM_USER_ID' : '?','UM_ATTR_NAME' : '?','UM_PROFILE_ID' : '?','UM_TENANT_ID' : '?','projection' : " +
-            "{$set' : '{'UM_ATTR_VALUE' : '?'}}}";
+            "{$set' : '{<ATTR_TO_UPDATE>}}}";
     public static final String DELETE_USER_PROPERTY_MONGO_CASE_INSENSITIVE = "{'collection' : 'UM_USER_ATTRIBUTE'," +
             "'UM_USER_ID' : '?','UM_ATTR_NAME' : '?','UM_PROFILE_ID' : '?','UM_TENANT_ID' : '?'}";
     public static final String USER_NAME_UNIQUE_MONGO_CASE_INSENSITIVE =

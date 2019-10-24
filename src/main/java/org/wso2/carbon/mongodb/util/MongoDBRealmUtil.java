@@ -40,6 +40,9 @@ public class MongoDBRealmUtil {
         if (!properties.containsKey(MongoDBRealmConstants.SELECT_USER)) {
             properties.put(MongoDBRealmConstants.SELECT_USER, MongoDBRealmConstants.SELECT_USER_MONGO_QUERY);
         }
+        if (!properties.containsKey(MongoDBRealmConstants.SELECT_USER_USE_MOBILE)) {
+            properties.put(MongoDBRealmConstants.SELECT_USER_USE_MOBILE, MongoDBRealmConstants.SELECT_USER_USE_MOBILE_MONGO_QUERY);
+        }
         if (!properties.containsKey(MongoDBRealmConstants.GET_ROLE_LIST)) {
             properties.put(MongoDBRealmConstants.GET_ROLE_LIST, MongoDBRealmConstants.GET_ROLE_LIST_MONGO_QUERY);
         }
@@ -65,6 +68,10 @@ public class MongoDBRealmUtil {
         if (!properties.containsKey(MongoDBRealmConstants.GET_PROPS_FOR_PROFILE)) {
             properties.put(MongoDBRealmConstants.GET_PROPS_FOR_PROFILE,
                     MongoDBRealmConstants.GET_PROPS_FOR_PROFILE_MONGO_QUERY);
+        }
+        if (!properties.containsKey(MongoDBRealmConstants.GET_PROPS_FOR_PROFILE_BY_MOBILE)) {
+            properties.put(MongoDBRealmConstants.GET_PROPS_FOR_PROFILE_BY_MOBILE,
+                    MongoDBRealmConstants.GET_PROPS_FOR_PROFILE_BY_MOBILE_MONGO_QUERY);
         }
         if (!properties.containsKey(MongoDBRealmConstants.GET_PROP_FOR_PROFILE)) {
             properties.put(MongoDBRealmConstants.GET_PROP_FOR_PROFILE,
@@ -234,7 +241,7 @@ public class MongoDBRealmUtil {
         }
         if (!properties.containsKey(MongoDBCaseInsensitiveConstants.DELETE_USER_PROPERTY_CASE_INSENSITIVE)) {
             properties.put(MongoDBCaseInsensitiveConstants.DELETE_USER_PROPERTY_CASE_INSENSITIVE,
-                    MongoDBCaseInsensitiveConstants.DELETE_USER_PROPERTY_MONGO_CASE_INSENSITIVE);
+                    MongoDBRealmConstants.DELETE_USER_PROPERTY_MONGO_QUERY);
         }
         if (!properties.containsKey(MongoDBCaseInsensitiveConstants.REMOVE_USER_FROM_SHARED_ROLE_CASE_INSENSITIVE)) {
             properties.put(MongoDBCaseInsensitiveConstants.REMOVE_USER_FROM_SHARED_ROLE_CASE_INSENSITIVE,

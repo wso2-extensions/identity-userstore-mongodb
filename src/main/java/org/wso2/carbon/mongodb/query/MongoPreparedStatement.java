@@ -40,6 +40,14 @@ public interface MongoPreparedStatement {
     void setInt(String key, int parameter);
 
     /**
+     * Set int parameter value to respective query parameter.
+     *
+     * @param key       of json query
+     * @param parameter value to set to query parameter
+     */
+    void setLong(String key, long parameter);
+
+    /**
      * Set String parameter value to respective query parameter.
      *
      * @param key       of json query

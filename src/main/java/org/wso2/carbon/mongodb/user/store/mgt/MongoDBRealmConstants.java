@@ -24,6 +24,7 @@ package org.wso2.carbon.mongodb.user.store.mgt;
 public class MongoDBRealmConstants {
 
     public static final String SELECT_USER = "SelectUserMONGO_QUERY";
+    public static final String SELECT_USER_USE_MOBILE = "SelectUserUseMobileMONGO_QUERY";
     public static final String GET_ROLE_LIST = "GetRoleListMONGO_QUERY";
     public static final String GET_USER_FILTER = "UserFilterMONGO_QUERY";
     public static final String GET_USER_ROLE = "UserRoleMONGO_QUERY";
@@ -35,6 +36,7 @@ public class MongoDBRealmConstants {
 
     public static final String GET_IS_USER_EXISTING = "IsUserExistingMONGO_QUERY";
     public static final String GET_PROPS_FOR_PROFILE = "GetUserPropertiesForProfileMONGO_QUERY";
+    public static final String GET_PROPS_FOR_PROFILE_BY_MOBILE = "GetUserPropertiesForProfileByMobileMONGO_QUERY";
     public static final String GET_PROP_FOR_PROFILE = "GetUserPropertyForProfileMONGO_QUERY";
     public static final String GET_PROFILE_NAMES = "GetProfileNamesMONGO_QUERY";
     public static final String GET_PROFILE_NAMES_FOR_USER = "GetUserProfileNamesMONGO_QUERY";
@@ -81,16 +83,12 @@ public class MongoDBRealmConstants {
             "'UM_ROLE_NAME' : '?','UM_SHARED_ROLE' : '0','projection': {'UM_ROLE_NAME' : '1','UM_TENANT_ID' : 1," +
             "'UM_SHARED_ROLE' : 1,'_id' : '0'}}";
     public static final String GET_USER_FILTER_MONGO_QUERY = "{'collection' : 'UM_USER','$match' : " +
-            "{'UM_USER_NAME' : '?','UM_TENANT_ID' : '?'},'$project' : {'name' : '$_id','UM_USER_NAME' : '1'," +
-            "'_id' : '0'},'$sort' : {'UM_USER_NAME' : 1}}";
+            "{'UM_USER_NAME' : '?','UM_TENANT_ID' : '?'},'$sort' : {'UM_USER_NAME' : 1}, '$limit' : '?'}";
     public static final String GET_USER_ROLE_MONGO_QUERY = "{'collection' : 'UM_ROLE',$match : {'UM_TENANT_ID' : '?'," +
-            "'userRole.UM_TENANT_ID' : '?','users.UM_TENANT_ID' : '?','users.UM_ID' : '?'},'$project' : " +
+            "'userRole.UM_TENANT_ID' : '?','userRole.UM_USER_ID' : '?'},'$project' : " +
             "{'UM_ROLE_NAME' : 1,'_id' : 0},'$lookup' : {'from' : 'UM_USER_ROLE','localField' : 'UM_ID'," +
             "'foreignField' : 'UM_ROLE_ID','as' : 'userRole'},'$unwind' : {'path' : '$userRole'," +
-            "'preserveNullAndEmptyArrays' : false},'$lookup_sub' : {'from' : 'UM_USER','localField' : " +
-            "'userRole.UM_USER_ID','foreignField' : 'UM_ID','as' : 'users','dependency' : 'userRole'}," +
-            "'$unwind_sub' : {'path' : '$users','preserveNullAndEmptyArrays' : false}}";
-
+            "'preserveNullAndEmptyArrays' : false}}";
     public static final String GET_IS_ROLE_EXISTING_MONGO_QUERY =
             "{'collection' : 'UM_ROLE','UM_ROLE_NAME' : '?','UM_TENANT_ID' : '?'}";
     public static final String GET_USERS_IN_ROLE_MONGO_QUERY = "{'collection' : 'UM_USER',$match : " +
@@ -102,11 +100,17 @@ public class MongoDBRealmConstants {
             " : false},'$unwind_sub' : {'path' : '$role','preserveNullAndEmptyArrays' : false}}";
     public static final String GET_IS_USER_EXISTING_MONGO_QUERY = "{'collection' : 'UM_USER','UM_USER_NAME' : '?'," +
             "'UM_TENANT_ID' : '?','projection' : {'UM_ID' : '1','_id' : '0'}}";
-    public static final String GET_PROPS_FOR_PROFILE_MONGO_QUERY = "{'collection' : 'UM_USER_ATTRIBUTE'," +
+    public static final String GET_PROPS_FOR_PROFILE_MONGO_QUERY1 = "{'collection' : 'UM_USER_ATTRIBUTE'," +
             "'$match' : {'UM_PROFILE_ID' : '?','UM_TENANT_ID' : '?','users.UM_USER_NAME' : '?'," +
             "'users.UM_TENANT_ID' : '?'},'$lookup' : {'from' : 'UM_USER','localField' : 'UM_USER_ID'," +
             "'foreignField' : 'UM_ID','as' : 'users'},'$unwind' : {'path' : '$users'," +
             "'preserveNullAndEmptyArrays' : false}}";
+    public static final String GET_PROPS_FOR_PROFILE_MONGO_QUERY = "{'collection' : 'UM_USER'," +
+            "'$match' : {'attrs.UM_PROFILE_ID' : '?','attrs.UM_TENANT_ID' : '?','UM_CASE_INSENSITIVE_USER_NAME' : '?'," +
+            "'UM_TENANT_ID' : '?'},'$lookup' : {'from' : 'UM_USER_ATTRIBUTE','localField' : 'UM_ID'," +
+            "'foreignField' : 'UM_USER_ID','as' : 'attrs'},'$unwind' : {'path' : '$attrs'," +
+            "'preserveNullAndEmptyArrays' : false}}";
+    public static final String GET_PROPS_FOR_PROFILE_BY_MOBILE_MONGO_QUERY = "{'collection' : 'UM_USER_ATTRIBUTE','mobile' : '?','UM_TENANT_ID' : '?'}";
     public static final String GET_PROP_FOR_PROFILE_MONGO_QUERY =
             "{'collection' : 'UM_USER_ATTRIBUTE','UM_USER_ID' : '?','UM_TENANT_ID' : '?'}";
     public static final String GET_PROFILE_NAMES_MONGO_QUERY = "{'collection' : 'UM_USER_ATTRIBUTE'," +
@@ -115,8 +119,10 @@ public class MongoDBRealmConstants {
             "'UM_USER_ID' : '?','projection' : {'UM_PROFILE_ID' : 1,_id : 0},'distinct' : 'UM_PROFILE_ID'}";
     public static final String GET_PROFILE_NAMES_FOR_USER_MONGO_QUERY_CONDITION = "{'collection' : 'UM_USER'," +
             "'UM_USER_NAME' : '?','UM_TENANT_ID' : '?','projection' : {'UM_ID' : '1'}}";
+    public static final String GET_USER_ID_FROM_USERNAME_MONGO_QUERY_WITHOUT_MOBILE =
+            "{'collection' : 'UM_USER','UM_USER_NAME' : '?','UM_TENANT_ID' : '?','projection' : {'UM_ID' : 1}}";
     public static final String GET_USER_ID_FROM_USERNAME_MONGO_QUERY =
-            "{'collection' : 'UM_USER','UM_USER_NAME' : '?','UM_TENANT_ID' : '?','projection' : {'UM_ID' : '1'}}";
+            "{'collection' : 'UM_USER_ATTRIBUTE', $or : [{'uid' : '?'}, {'mobile' : '?'}],'UM_TENANT_ID' : '?','projection' : {'UM_USER_ID' : 1}}";
     public static final String GET_USERNAME_FROM_TENANT_ID_MONGO_QUERY =
             "{'collection' : 'UM_USER','UM_TENANT_ID' : '?','projection' : {'UM_USER_NAME' : '1'}}";
     public static final String GET_TENANT_ID_FROM_USERNAME_MONGO_QUERY =
@@ -130,11 +136,12 @@ public class MongoDBRealmConstants {
             "'attribute.UM_PROFILE_ID' : '?','attribute.UM_TENANT_ID' : '?','user.UM_TENANT_ID' : '?','$lookup' : " +
             "{'from' : 'UM_USER_ATTRIBUTE','localField' : 'UM_ID','foreignField' : 'UM_USER_ID','as' : 'attribute'}," +
             "'projection' : {'UM_USER_NAME' : '1'}}";
-    public static final String GET_USERS_FOR_PROP_MONGO_QUERY = "{'collection' : 'UM_USER','$match' : " +
-            "{'UM_TENANT_ID' : '?','attribute.UM_ATTR_NAME' : '?','attribute.UM_ATTR_VALUE' : '?'," +
-            "'attribute.UM_PROFILE_ID' : '?'},'$lookup' : {'from' : 'UM_USER_ATTRIBUTE','localField' : 'UM_ID'," +
-            "'foreignField' : 'UM_USER_ID','as' : 'users'},'$unwind' : {'path' : '$users'," +
-            "'preserveNullAndEmptyArrays' : false},'$project' : {'UM_USER_NAME' : '1'}}";
+//    public static final String GET_USERS_FOR_PROP_MONGO_QUERY = "{'collection' : 'UM_USER','$match' : " +
+//            "{'UM_TENANT_ID' : ?,<INSERT_STATEMENT>," +
+//            "'attribute.UM_PROFILE_ID' : '?'},'$lookup' : {'from' : 'UM_USER_ATTRIBUTE','localField' : 'UM_ID'," +
+//            "'foreignField' : 'UM_USER_ID','as' : 'attribute'},'$unwind' : {'path' : '$attribute'," +
+//            "'preserveNullAndEmptyArrays' : false},'$project' : {'UM_USER_NAME' : 1}}";
+    public static final String GET_USERS_FOR_PROP_MONGO_QUERY = "{ 'collection': 'UM_USER_ATTRIBUTE', <INSERT_STATEMENT>, 'UM_PROFILE_ID': '?', 'UM_TENANT_ID': '?', '$project': {'uid': 1}}";
     public static final String GET_USERS_IN_SHARED_ROLE_MONGO_QUERY = "{'collection' : 'UM_SHARED_USER_ROLE'," +
             "'$match' : {'UM_ROLE_NAME' : '?','UM_USER_TENANT_ID' : 'user.UM_TENANT_ID'," +
             "'UM_ROLE_TENANT_ID' : 'role.UM_TENANT_ID'},'$lookup' : [{'from' : 'UM_USER','localField' : 'UM_USER_ID'," +
@@ -142,7 +149,7 @@ public class MongoDBRealmConstants {
             "'foreignField' : 'UM_ID','as' : 'role'}],'$project' : {'UM_USER_NAME' : 1}}";
     public static final String ADD_USER_MONGO_QUERY = "{'collection' : 'UM_USER','UM_USER_NAME' : '?'," +
             "'UM_USER_PASSWORD' : '?','UM_SALT_VALUE' : '?','UM_REQUIRE_CHANGE' : '?','UM_CHANGED_TIME' : '?'," +
-            "'UM_TENANT_ID' : '?','UM_ID' : '?'}";
+            "'UM_TENANT_ID' : '?','UM_ID' : '?', 'UM_CASE_INSENSITIVE_USER_NAME' : '?'}";
     public static final String ADD_USER_TO_ROLE_MONGO_QUERY = "{'collection' : 'UM_USER_ROLE','UM_USER_ID' : '?'," +
             "'UM_ROLE_ID' : '?','UM_TENANT_ID' : '?','UM_ID' : '?'}";
     public static final String ADD_USER_TO_ROLE_MONGO_QUERY_CONDITION1 =
@@ -188,9 +195,11 @@ public class MongoDBRealmConstants {
             "'UM_USER_ID' : '?','UM_ATTR_NAME' : '?','UM_ATTR_VALUE' : '?','UM_PROFILE_ID' : '?','UM_TENANT_ID' : '?'}";
     public static final String UPDATE_USER_PROPERTY_MONGO_QUERY = "{'collection' : 'UM_USER_ATTRIBUTE'," +
             "'UM_USER_ID' : '?','UM_ATTR_NAME' : '?','UM_PROFILE_ID' : '?','UM_TENANT_ID' : '?','projection' : " +
-            "{$set' : '{'UM_ATTR_VALUE' : '?'}}}";
+            "{$set' : '{<ATTR_TO_UPDATE>}}}";
+//    public static final String DELETE_USER_PROPERTY_MONGO_QUERY = "{'collection' : 'UM_USER_ATTRIBUTE'," +
+//            "'UM_USER_ID' : '?','UM_ATTR_NAME' : '?','UM_PROFILE_ID' : '?','UM_TENANT_ID' : '?'}";
     public static final String DELETE_USER_PROPERTY_MONGO_QUERY = "{'collection' : 'UM_USER_ATTRIBUTE'," +
-            "'UM_USER_ID' : '?','UM_ATTR_NAME' : '?','UM_PROFILE_ID' : '?','UM_TENANT_ID' : '?'}";
+            "'UM_USER_ID' : '?','UM_PROFILE_ID' : '?','UM_TENANT_ID' : '?', 'projection' : {'$unset' : {<ATTR_TO_REMOVE>}}}";
     public static final String USER_NAME_UNIQUE_MONGO_QUERY =
             "{'collection' : 'UM_USER','UM_USER_NAME' : '?','projection' : {'UM_ID' : '1','_id' : '0'}}";
     public static final String IS_DOMAIN_EXISTS_MONGO_QUERY = "{'collection' : 'UM_DOMAIN','UM_DOMAIN_NAME' : '?'," +
@@ -202,6 +211,7 @@ public class MongoDBRealmConstants {
             "'UM_ROLE_TENANT_ID' : 'role.UM_TENANT_ID','$lookup' : [{'from' : 'UM_USER','localField' : 'UM_USER_ID'," +
             "'foreignField' : 'UM_ID','as' : 'user'},{'from' : 'UM_ROLE','localField' : 'UM_ROLE_ID'," +
             "'foreignField' : 'UM_ID','as' : 'roles'}]}";
+    public static final String SELECT_USER_USE_MOBILE_MONGO_QUERY = "{'collection':'UM_USER_ATTRIBUTE','$lookup':{'from':'UM_USER','localField':'UM_USER_ID','foreignField':'UM_ID','as':'UM_USER'}, '$match':{'mobile':'?'}}";
 
     public static final String DIGEST_FUNCTION = "PasswordDigest";
     public static final String STORE_SALTED_PASSWORDS = "StoreSaltedPassword";
@@ -210,4 +220,5 @@ public class MongoDBRealmConstants {
     public static final String URL = "ConnectionURL";
     public static final String USERNAME = "ConnectionName";
     public static final String PASSWORD = "ConnectionPassword";
+    public static final String IS_MOBILE_USERNAME = "IsMobileUserName";
 }

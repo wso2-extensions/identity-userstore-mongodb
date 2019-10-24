@@ -18,20 +18,10 @@
 
 package org.wso2.carbon.mongodb.util;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
-import com.mongodb.DB;
-import com.mongodb.MongoClient;
-import com.mongodb.MongoClientURI;
-import com.mongodb.DBCursor;
-import com.mongodb.BulkWriteResult;
-import com.mongodb.AggregationOutput;
-import com.mongodb.DBObject;
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBCollection;
+import com.mongodb.*;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -55,6 +45,8 @@ public class MongoDatabaseUtil {
 
     private static DB db = null;
 
+    private static Map<String, MongoClient> mongoClients;
+
     /**
      * Return the realm data source of user store.
      *
@@ -63,6 +55,11 @@ public class MongoDatabaseUtil {
      * @throws UserStoreException if any error occurred
      */
     public static synchronized DB getRealmDataSource(RealmConfiguration realmConfiguration) throws UserStoreException {
+
+        if (log.isDebugEnabled()) {
+            log.debug("getRealmDataSource(RealmConfiguration realmConfiguration)");
+        }
+
         try {
             return (db == null ? createRealmDataSource(realmConfiguration) : db);
         } catch (UserStoreException e) {
@@ -78,6 +75,11 @@ public class MongoDatabaseUtil {
      * @throws UserStoreException if any error occurred
      */
     public static DB createRealmDataSource(RealmConfiguration realmConfiguration) throws UserStoreException {
+
+        if (log.isDebugEnabled()) {
+            log.debug("createRealmDataSource(RealmConfiguration realmConfiguration)");
+        }
+
         String password;
         String url;
         String username;
@@ -104,9 +106,7 @@ public class MongoDatabaseUtil {
         }
 
         String urlWithCredentials = url.replaceFirst("://", "://" + username + ":" + password + "@");
-
         MongoClientURI clientURI = new MongoClientURI(urlWithCredentials);
-        MongoClient mongoClient = new MongoClient(clientURI);
 
         //noinspection ConstantConditions
         if (clientURI.getDatabase() == null) {
@@ -115,6 +115,27 @@ public class MongoDatabaseUtil {
             }
             throw new UserStoreException("Property '" + MongoDBRealmConstants.URL +
                     "' provided in user_mgt.xml does not contain the database name. Cannot start server!");
+        }
+
+        MongoClient mongoClient = null;
+        synchronized (MongoDatabaseUtil.class) {
+            if (mongoClients == null) {
+                mongoClients = new HashMap<>();
+            } else {
+                mongoClient = mongoClients.get(urlWithCredentials);
+            }
+            if (mongoClient == null) {
+                mongoClient = new MongoClient(clientURI);
+                mongoClients.put(urlWithCredentials, mongoClient);
+
+                if(log.isDebugEnabled()) {
+                    log.debug("create new mongoClient");
+                }
+            } else {
+                if(log.isDebugEnabled()) {
+                    log.debug("use exist mongoClient");
+                }
+            }
         }
 
         //noinspection deprecation
@@ -151,6 +172,8 @@ public class MongoDatabaseUtil {
                                 prepStmt.setString(key, (String) entry.getValue());
                             } else if (entry.getValue() instanceof Integer) {
                                 prepStmt.setInt(key, (Integer) entry.getValue());
+                            } else if (entry.getValue() instanceof Long) {
+                                prepStmt.setLong(key, (Long) entry.getValue());
                             }
                         }
                     }
@@ -206,6 +229,8 @@ public class MongoDatabaseUtil {
                                 prepStmt.setString(key, (String) entry.getValue());
                             } else if (entry.getValue() instanceof Integer) {
                                 prepStmt.setInt(key, (Integer) entry.getValue());
+                            } else if (entry.getValue() instanceof Long) {
+                                prepStmt.setLong(key, (Long) entry.getValue());
                             }
                         }
                     }
@@ -218,9 +243,9 @@ public class MongoDatabaseUtil {
                         if (updateTrue(keys)) {
                             prepStmt.updateBatch();
                         } else {
-                            int Id = MongoDatabaseUtil.getIncrementedSequence(dbConnection,
+                            long Id = MongoDatabaseUtil.getIncrementedSequence(dbConnection,
                                     MongoDBCoreConstants.UM_USER_ROLE);
-                            prepStmt.setInt(MongoDBCoreConstants.UM_ID, Id);
+                            prepStmt.setLong(MongoDBCoreConstants.UM_ID, Id);
                             prepStmt.addBatch();
                         }
                     }
@@ -236,13 +261,15 @@ public class MongoDatabaseUtil {
                         log.debug("Bulk insert results: " + insertResult);
                     }
                 }
+            } else {
+                prepStmt.insert();
             }
             localConnection = true;
             if (log.isDebugEnabled()) {
                 log.debug("Executed a batch update. Query: " + stmt + "; Status: " + batchParamIndex);
             }
         } catch (MongoDBQueryException e) {
-            throw new MongoDBQueryException("Failed to update user role mapping in batch mode", e);
+            throw new MongoDBQueryException("Failed to update user role mapping in batch mode, stmt [" + stmt + "], params [" + params.entrySet().stream().map(entry -> "[ " + entry.getKey() + ": " + entry.getValue() + " ]").reduce("", String::concat) + "]", e);
         } finally {
             if (localConnection) {
                 MongoDatabaseUtil.closeAllConnections(dbConnection);
@@ -344,7 +371,7 @@ public class MongoDatabaseUtil {
      */
     public static boolean updateTrue(List<String> keys) {
         for (String key : keys) {
-            if (key.contains(MongoDBCoreConstants.SET_FIELD)) {
+            if (key.contains(MongoDBCoreConstants.SET_FIELD) || key.contains(MongoDBCoreConstants.UNSET_FIELD)) {
                 return true;
             }
         }
@@ -417,7 +444,7 @@ public class MongoDatabaseUtil {
         closeConnection(dbConnection);
     }
 
-    private static synchronized void incrementConnectionsClosed() {
+    private static void incrementConnectionsClosed() {
         if (connectionsClosed != Long.MAX_VALUE) {
             connectionsClosed++;
         }
@@ -513,6 +540,8 @@ public class MongoDatabaseUtil {
                                 prepStmt.setString(key, (String) params.get(key));
                             } else if (params.get(key) instanceof Integer) {
                                 prepStmt.setInt(key, (Integer) params.get(key));
+                            } else if (params.get(key) instanceof Long) {
+                                prepStmt.setLong(key, (Long) params.get(key));
                             }
                         }
                     }
@@ -564,25 +593,16 @@ public class MongoDatabaseUtil {
      * @param collection   to auto increment
      * @return int sequence
      */
-    public static int getIncrementedSequence(DB dbConnection, String collection) {
-        DBObject checkObject = new BasicDBObject(MongoDBCoreConstants.NAME, collection);
-        DBCollection collect = dbConnection.getCollection(MongoDBCoreConstants.COUNTERS);
-        DBCursor cursor = collect.find(checkObject);
-        int seq = 0;
-        boolean isEmpty = true;
-        while (cursor.hasNext()) {
-            double value = Double.parseDouble(cursor.next().get(MongoDBCoreConstants.SEQ).toString());
-            seq = (int) value;
-            isEmpty = false;
+    public static synchronized long getIncrementedSequence(DB dbConnection, String collection) {
+
+        if (log.isDebugEnabled()) {
+            log.debug("getIncrementedSequence(DB dbConnection, String collection) [" + collection + "]");
         }
-        if (isEmpty) {
-            collect.insert(new BasicDBObject(MongoDBCoreConstants.NAME, collection).append(MongoDBCoreConstants.SEQ,
-                    ++seq));
-        } else {
-            collect.update(new BasicDBObject(MongoDBCoreConstants.NAME, collection), new BasicDBObject(
-                    MongoDBCoreConstants.SET_FIELD, new BasicDBObject(MongoDBCoreConstants.SEQ, ++seq)));
-        }
-        return seq;
+
+        DBObject queryObject = new BasicDBObject(MongoDBCoreConstants.ID, collection);
+        DBObject updateObject = new BasicDBObject("$inc", new BasicDBObject("seq", Long.valueOf(1)));
+        DBObject result = dbConnection.getCollection(MongoDBCoreConstants.COUNTERS).findAndModify(queryObject, null, null, false, updateObject, true, true);
+        return (long)result.get("seq");
     }
 
     /**
@@ -617,6 +637,8 @@ public class MongoDatabaseUtil {
                                 prepStmt.setString(key, (String) params.get(key));
                             } else if (params.get(key) instanceof Integer) {
                                 prepStmt.setInt(key, (Integer) params.get(key));
+                            } else if (params.get(key) instanceof Long) {
+                                prepStmt.setLong(key, (Long) params.get(key));
                             }
                         }
                     }

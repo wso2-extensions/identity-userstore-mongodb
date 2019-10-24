@@ -2,7 +2,7 @@
 # MongoDB User Store Extension for WSO2 IS
 
 ## Introduction
-This is an extension, which consists of a user store implemented using MongoDB (A NoSQL Database) for WSO2 Product-IS. This MongoDB user store extension can be used as both primary and secondary user store for product-IS. This extension is compatible with IS version 5.5.0. 
+This is an extension, which consists of a user store implemented using MongoDB (A NoSQL Database) for WSO2 Product-IS. This MongoDB user store extension can be used as both primary and secondary user store for product-IS. This extension is compatible with IS version 5.5.0.
 
 ## Prerequisites
 - [MongoDB user store extension](https://github.com/pranavan15/mongodb-user-store-wso2-is/archive/master.zip)
@@ -13,16 +13,16 @@ This is an extension, which consists of a user store implemented using MongoDB (
 ## Steps to Configure
 1. First, build the `MongoDB user store extension` using maven by executing the following command from the root folder of this extension
 ```bash
-   mvn clean install    
+   mvn clean install
 ```
 
-2. Copy the extension jar file created inside the `target` folder and add it into the `/repository/components/dropins` folder of product-IS 
+2. Copy the extension jar file created inside the `target` folder and add it into the `/repository/components/dropins` folder of product-IS
 
 3. Copy the MongoDB-Java-driver jar into the `/repository/components/lib` folder of product-IS
 
 4. start the MongoDB server using the following command
 ```bash
-   sudo service mongod start  
+   sudo service mongod start
 ```
 
 5. Start a Mongo shell using the below command
@@ -45,14 +45,14 @@ This is an extension, which consists of a user store implemented using MongoDB (
    ./wso2server.sh
 ```
 
-Now you have successfully added the mongoDB user store extension to the product-IS. You should see MongoDB user store listed along with other user stores using which you can create a MonogDB secondary user store and started using it for your user management operations. 
+Now you have successfully added the mongoDB user store extension to the product-IS. You should see MongoDB user store listed along with other user stores using which you can create a MonogDB secondary user store and started using it for your user management operations.
 
 
 ### Configuring MongoDB as the Primary User Store
 
-The above configurations are good enough for you to use the MongoDB as a secondary user store manager. However, in order to use the MongoDB as the primary user store of product-IS you require some additional configurations as follow. 
+The above configurations are good enough for you to use the MongoDB as a secondary user store manager. However, in order to use the MongoDB as the primary user store of product-IS you require some additional configurations as follow.
 
-9. After following steps 1-7, prior to start the IS server, add the following in the `user-mgt.xml` file of product-IS. You can find this file inside `/repository/conf` folder. Make sure to replace the `ConnectionName` and `ConnectionPassword` with your credentials for the specified MongoDB database. 
+9. After following steps 1-7, prior to start the IS server, add the following in the `user-mgt.xml` file of product-IS. You can find this file inside `/repository/conf` folder. Make sure to replace the `ConnectionName` and `ConnectionPassword` with your credentials for the specified MongoDB database.
 
 ##### user-mgt.xml
 ```xml
@@ -64,6 +64,7 @@ The above configurations are good enough for you to use the MongoDB as a seconda
       <Property name="ReadGroups">true</Property>
       <Property name="ReadOnly">false</Property>
       <Property name="IsEmailUserName">false</Property>
+      <Property name="IsMobileUserName">true</Property>
       <Property name="DomainCalculation">default</Property>
       <Property name="WriteGroups">true</Property>
       <Property name="UserNameUniqueAcrossTenants">false</Property>
@@ -77,15 +78,16 @@ The above configurations are good enough for you to use the MongoDB as a seconda
       <Property name="RolenameJavaScriptRegEx">^[\S]{5,30}$</Property>
       <Property name="validationInterval"/>
       <Property name="CaseInsensitiveUsername">true</Property>
-      <Property name="SCIMEnabled">false</Property>
-      <Property name="IsBulkImportSupported">false</Property>
-      <Property name="PasswordDigest">SHA-256</Property>
+      <Property name="SCIMEnabled">true</Property>
+      <Property name="IsBulkImportSupported">true</Property>
+      <Property name="PasswordDigest">MD5</Property>
       <Property name="MultiAttributeSeparator">,</Property>
-      <Property name="StoreSaltedPassword">true</Property>
-      <Property name="MaximumUserListLength">100</Property>
-      <Property name="MaximumRoleListLength">100</Property>
+      <Property name="StoreSaltedPassword">false</Property>
+      <Property name="MaxUserNameListLength">100</Property>
+      <Property name="MaxRoleNameListLength">100</Property>
       <Property name="EnableUserRoleCache">true</Property>
-      <Property name="UserNameUniqueAcrossTenants">false</Property>            
+      <Property name="UserNameAttribute">uid</Property>
+      <Property name="MultipleAttributeEnable">true</Property>         
   </UserStoreManager>
 ```
 

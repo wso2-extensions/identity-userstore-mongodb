@@ -18,6 +18,7 @@
 
 package org.wso2.carbon.mongodb.query;
 
+import java.lang.reflect.Array;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.ArrayList;
@@ -42,6 +43,7 @@ import org.apache.commons.logging.LogFactory;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.wso2.carbon.mongodb.user.store.mgt.MongoDBCoreConstants;
+import org.wso2.carbon.user.core.common.UserStore;
 
 /**
  * MongoDB Prepared Statement interface implementation class.
@@ -74,6 +76,8 @@ public class MongoPreparedStatementImpl implements MongoPreparedStatement {
     private boolean isCaseSensitive;
     private Map<String, Object> mapMatchCaseInSensitive = null;
     private Map<String, Object> mapCaseQuery = null;
+    private Integer limit = null;
+    private boolean isUnset = false;
 
     /**
      * Constructor with two arguments.
@@ -81,7 +85,11 @@ public class MongoPreparedStatementImpl implements MongoPreparedStatement {
      * @param db    DB connection to mongodb
      * @param query to execute
      */
-    public MongoPreparedStatementImpl(DB db, String query) {
+    public MongoPreparedStatementImpl(DB db, String query) throws MongoDBQueryException {
+        if(query == null) {
+            throw new MongoDBQueryException("Cannot init null query.");
+        }
+
         if (this.db == null) {
             this.db = db;
         }
@@ -112,7 +120,7 @@ public class MongoPreparedStatementImpl implements MongoPreparedStatement {
             setMultiLookUp(true);
         }
         if (log.isDebugEnabled()) {
-            log.info("Is multiple lookup enabled for the prepared statement: " + isMultipleLookUp());
+            log.debug("Is multiple lookup enabled for the prepared statement: " + isMultipleLookUp());
         }
     }
 
@@ -190,6 +198,10 @@ public class MongoPreparedStatementImpl implements MongoPreparedStatement {
         parameterValue.put(key, parameter);
     }
 
+    public void setLong(String key, long parameter) {
+        parameterValue.put(key, parameter);
+    }
+
     public void setString(String key, String parameter) {
         parameterValue.put(key, parameter);
     }
@@ -263,6 +275,10 @@ public class MongoPreparedStatementImpl implements MongoPreparedStatement {
         getAggregationObjects(defaultObject);
         List<DBObject> pipeline = new ArrayList<>();
 
+        // Add limit attribute to pipeline
+        if (limit != null) {
+            addLimitAttribute(pipeline);
+        }
         // Add lookup attribute to pipeline
         if (mapLookUp != null) {
             addLookUpAttribute(pipeline);
@@ -295,8 +311,12 @@ public class MongoPreparedStatementImpl implements MongoPreparedStatement {
             throw new MongoDBQueryException("Parameter count mismatch");
         } else {
             if (convertToDBObject(defaultQuery)) {
-                return this.collection.update(this.query, new BasicDBObject(MongoDBCoreConstants.SET_FIELD,
-                        this.projection));
+                if( !this.isUnset ) {
+                    return this.collection.update(this.query, new BasicDBObject(MongoDBCoreConstants.SET_FIELD, this.projection));
+                } else {
+                    this.isUnset = false;
+                    return this.collection.update(this.query, new BasicDBObject(MongoDBCoreConstants.UNSET_FIELD, this.projection));
+                }
             } else {
                 if (log.isDebugEnabled()) {
                     log.debug("Using query: " + defaultQuery);
@@ -371,10 +391,17 @@ public class MongoPreparedStatementImpl implements MongoPreparedStatement {
         Iterator<String> keys = query.keys();
         while (keys.hasNext()) {
             String key = keys.next();
-            try {
-                JSONObject value = query.getJSONObject(key);
-                matchArguments(value);
-            } catch (Exception e) {
+            Object value = query.get(key);
+            if(value instanceof JSONObject) {
+                matchArguments((JSONObject) value);
+            } else if (value instanceof JSONArray) {
+                for(int i = 0; i < ((JSONArray) value).length(); i++) {
+                    Object item = ((JSONArray) value).get(i);
+                    if (item instanceof JSONObject) {
+                        matchArguments((JSONObject) item);
+                    }
+                }
+            } else {
                 if (query.get(key).equals("?")) {
                     this.parameterCount++;
                 }
@@ -402,6 +429,8 @@ public class MongoPreparedStatementImpl implements MongoPreparedStatement {
             // If query has $set attribute then query will be update query
             if (query.contains(MongoDBCoreConstants.SET_FIELD)) {
                 getUpdateObject(queryObject);
+            } else if (query.contains(MongoDBCoreConstants.UNSET_FIELD)) {
+                getUnsetObject(queryObject);
             } else {
                 setQueryObject(queryObject, false);
             }
@@ -425,21 +454,48 @@ public class MongoPreparedStatementImpl implements MongoPreparedStatement {
             String key = keys.next();
             Object val = null;
             try {
-                JSONObject value = object.getJSONObject(key);
-                if (key.equals(MongoDBCoreConstants.PROJECTION_FIELD)) {
-                    hasProjection = true;
+                Object queryPart = object.get(key);
+                if(queryPart instanceof JSONObject) {
+                    JSONObject value = object.getJSONObject(key);
+                    if (key.equals(MongoDBCoreConstants.PROJECTION_FIELD)) {
+                        hasProjection = true;
+                    }
+                    setQueryObject(value, hasProjection);
+                } else if (queryPart instanceof JSONArray) {
+                    JSONArray subQuerys = object.getJSONArray(key);
+                    List<Map<String, Object>> subQueryList = new ArrayList<>();
+                    for (int i = 0; i < subQuerys.length(); i++ ){
+                        if (subQuerys.get(i) instanceof JSONObject) {
+                            Iterator<String> subQueryKeys = subQuerys.getJSONObject(i).keys();
+                            Map<String, Object> subMapQuery = new HashMap<>();
+                            while (subQueryKeys.hasNext()) {
+                                String subQueryKey = subQueryKeys.next();
+                                if (parameterValue.containsKey(subQueryKey)) {
+                                    subMapQuery.put(subQueryKey, parameterValue.get(subQueryKey));
+                                } else {
+                                    subMapQuery.put(subQueryKey, subQuerys.getJSONObject(i).get(subQueryKey));
+                                }
+                            }
+                            subQueryList.add(subMapQuery);
+                        }
+                    }
+
+                    if (subQueryList.size() > 0) {
+                        mapQuery.put(key, subQueryList);
+                    }
+                } else {
+                    // If a case insensitive then check for $regex attribute
+                    if (key.equals(MongoDBCoreConstants.REGEX_FIELD)) {
+                        key = MongoDBCoreConstants.UM_USER_NAME;
+                        this.isCaseSensitive = false;
+                    }
+                    // Replace query parameter with respective value
+                    if (parameterValue.containsKey(key)) {
+                        val = parameterValue.get(key);
+                    }
                 }
-                setQueryObject(value, hasProjection);
             } catch (Exception e) {
-                // If a case insensitive then check for $regex attribute
-                if (key.equals(MongoDBCoreConstants.REGEX_FIELD)) {
-                    key = MongoDBCoreConstants.UM_USER_NAME;
-                    this.isCaseSensitive = false;
-                }
-                // Replace query parameter with respective value
-                if (parameterValue.containsKey(key)) {
-                    val = parameterValue.get(key);
-                }
+                log.error("Error when build query object. ", e);
             }
             if (val != null && !MongoDBCoreConstants.FILTER_OPERATOR.equals(val)) {
                 if (!this.isCaseSensitive) {
@@ -492,6 +548,38 @@ public class MongoPreparedStatementImpl implements MongoPreparedStatement {
     }
 
     /**
+     * get the unset object.
+     *
+     * @param object to update
+     */
+    private void getUnsetObject(JSONObject object) {
+        Iterator<String> keys = object.keys();
+        while (keys.hasNext()) {
+            String key = keys.next();
+            Object val;
+            if (key.equals(MongoDBCoreConstants.PROJECTION_FIELD)) {
+                JSONObject setObject = object.getJSONObject(key);
+
+                JSONObject projection = setObject.getJSONObject(MongoDBCoreConstants.UNSET_FIELD);
+                String[] elementNames = JSONObject.getNames(projection);
+                for (String elementName : elementNames) {
+                    mapProjection.put(elementName, projection.get(elementName));
+                }
+                if (!mapProjection.isEmpty()) {
+                    this.projection = new BasicDBObject(mapProjection);
+                }
+            } else {
+                if (parameterValue.containsKey(key)) {
+                    val = parameterValue.get(key);
+                    mapQuery.put(key, val);
+                }
+            }
+        }
+        this.isUnset = true;
+        this.query = new BasicDBObject(mapQuery);
+    }
+
+    /**
      * Convert JSON Query to Aggregation Pipeline Object.
      *
      * @param stmt JSONObject
@@ -503,6 +591,8 @@ public class MongoPreparedStatementImpl implements MongoPreparedStatement {
             String key = keys.next();
             if (key.equals(MongoDBCoreConstants.COLLECTION_FIELD)) {
                 this.collection = db.getCollection(stmt.get(key).toString());
+            } else if (key.equals(MongoDBCoreConstants.LIMIT_FIELD)) {
+                this.setLimit(stmt.get(key));
             } else {
                 JSONObject value = stmt.getJSONObject(key);
                 if (key.equals(MongoDBCoreConstants.LOOKUP_FIELD) || key.contains(MongoDBCoreConstants.LOOKUP_SUB)) {
@@ -566,6 +656,19 @@ public class MongoPreparedStatementImpl implements MongoPreparedStatement {
         }
     }
 
+    private void setLimit(Object expr) {
+        if (expr != null) {
+            if (expr.toString().matches("[0-9]+")) {
+                this.limit = Integer.parseInt(expr.toString());
+            } else {
+                Object val = parameterValue.get(MongoDBCoreConstants.LIMIT_FIELD);
+                if (val != null) {
+                    this.limit = Integer.parseInt(val.toString());
+                }
+            }
+        }
+    }
+
     /**
      * JSON query will update with  user values.
      *
@@ -582,6 +685,16 @@ public class MongoPreparedStatementImpl implements MongoPreparedStatement {
         if (!mapProjection.isEmpty()) {
             this.projection = new BasicDBObject(mapProjection);
         }
+    }
+
+    /**
+     * Add limit attribute to pipeline.
+     *
+     * @param pipeline pipeline list, which needs to be modified
+     */
+    private void addLimitAttribute(List<DBObject> pipeline) {
+        DBObject limitStage = new BasicDBObject(MongoDBCoreConstants.LIMIT_FIELD, this.limit);
+        pipeline.add(limitStage);
     }
 
     /**

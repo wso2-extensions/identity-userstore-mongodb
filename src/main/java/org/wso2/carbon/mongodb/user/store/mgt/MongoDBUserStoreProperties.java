@@ -85,13 +85,13 @@ public class MongoDBUserStoreProperties {
                 MongoDBCaseInsensitiveConstants.CASE_SENSITIVE_USERNAME_DESCRIPTION);
 
         // Set advanced properties
-        setAdvancedProperty(UserStoreConfigConstants.SCIMEnabled, "false");
+        setAdvancedProperty(UserStoreConfigConstants.SCIMEnabled, "true");
         setAdvancedProperty("IsBulkImportSupported", "false");
         setAdvancedProperty("PasswordDigest", "SHA-256");
         setAdvancedProperty(MULTI_ATTRIBUTE_SEPARATOR, ",");
         setAdvancedProperty("StoreSaltedPassword", "true");
-        setAdvancedProperty("MaximumUserListLength", "100");
-        setAdvancedProperty("MaximumRoleListLength", "100");
+        setAdvancedProperty("MaxUserNameListLength", "100");
+        setAdvancedProperty("MaxRoleNameListLength", "100");
         setAdvancedProperty("EnableUserRoleCache", "true");
         setAdvancedProperty("UserNameUniqueAcrossTenants", "false");
         setAdvancedProperty("validationQuery", "");

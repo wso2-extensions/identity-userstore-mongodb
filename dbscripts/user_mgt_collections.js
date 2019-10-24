@@ -24,11 +24,11 @@ db.system.js.save(
             var ret = db.COUNTERS.findAndModify(
                 {
                     query: { _id: name },
-                    update: { $inc: { seq: 1 } },
+                    update: { $inc: { seq: NumberLong("1") } },
                     new: true
                 }
             );
-            return ret.seq;
+            return NumberLong(ret.seq);
         }
     }
 );
@@ -46,7 +46,7 @@ db.COUNTERS.insert({
 
     _id: "UM_TENANT",
 
-    seq: 0
+    seq: NumberLong("0")
 
 });
 db.UM_TENANT.createIndex({UM_ID: 16},{unique: true});
@@ -57,7 +57,7 @@ db.COUNTERS.insert({
 
     _id: "UM_DOMAIN",
 
-    seq: 0
+    seq: NumberLong("0")
 
 });
 db.UM_DOMAIN.createIndex({UM_DOMAIN_ID: 16,UM_TENANT_ID: 16},{unique: true});
@@ -67,18 +67,19 @@ db.COUNTERS.insert({
 
     _id: "UM_USER",
 
-    seq: 0
+    seq: NumberLong("0")
 
 });
 db.UM_USER.createIndex({UM_ID: 16,UM_TENANT_ID: 16},{unique: true});
 db.UM_USER.createIndex({UM_USER_NAME: 5,UM_TENANT_ID: 16},{unique: true});
+db.UM_USER.createIndex({UM_CASE_INSENSITIVE_USER_NAME: 5,UM_TENANT_ID: 16},{unique: true});
 
 
 db.COUNTERS.insert({
 
     _id: "UM_SYSTEM_USER",
 
-    seq: 0
+    seq: NumberLong("0")
 
 });
 db.UM_SYSTEM_USER.createIndex({UM_ID: 16,UM_TENANT_ID: 16},{unique: true});
@@ -89,7 +90,7 @@ db.COUNTERS.insert({
 
     _id: "UM_ROLE",
 
-    seq: 0
+    seq: NumberLong("0")
 
 });
 db.UM_ROLE.createIndex({UM_ID: 16,UM_TENANT_ID: 16},{unique: true});
@@ -100,7 +101,7 @@ db.COUNTERS.insert({
 
     _id: "UM_MODULE",
 
-    seq: 0
+    seq: NumberLong("0")
 
 });
 db.UM_MODULE.createIndex({UM_ID: 16},{unique: true});
@@ -114,7 +115,7 @@ db.COUNTERS.insert({
 
     _id: "UM_PERMISSION",
 
-    seq: 0
+    seq: NumberLong("0")
 
 });
 db.UM_PERMISSION.createIndex({UM_ID: 16,UM_TENANT_ID: 16},{unique: true});
@@ -125,7 +126,7 @@ db.COUNTERS.insert({
 
     _id: "UM_ROLE_PERMISSION",
 
-    seq: 0
+    seq: NumberLong("0")
 
 });
 db.UM_ROLE_PERMISSION.createIndex({UM_ID: 16,UM_TENANT_ID: 16},{unique: true});
@@ -136,7 +137,7 @@ db.COUNTERS.insert({
 
     _id: "UM_USER_PERMISSION",
 
-    seq: 0
+    seq: NumberLong("0")
 
 });
 db.UM_USER_PERMISSION.createIndex({UM_ID: 16,UM_TENANT_ID: 16},{unique: true});
@@ -146,7 +147,7 @@ db.COUNTERS.insert({
 
     _id: "UM_USER_ROLE",
 
-    seq: 0
+    seq: NumberLong("0")
 
 });
 db.UM_USER_ROLE.createIndex({UM_ID: 16,UM_TENANT_ID: 16},{unique: true});
@@ -160,7 +161,7 @@ db.COUNTERS.insert({
 
     _id: "UM_ACCOUNT_MAPPING",
 
-    seq: 0
+    seq: NumberLong("0")
 
 });
 db.UM_ACCOUNT_MAPPING.createIndex({UM_ID: 16},{unique: true});
@@ -171,18 +172,22 @@ db.COUNTERS.insert({
 
     _id: "UM_USER_ATTRIBUTE",
 
-    seq: 0
+    seq: NumberLong("0")
 
 });
 db.UM_USER_ATTRIBUTE.createIndex({UM_ID: 16,UM_TENANT_ID: 16},{unique: true});
 db.UM_USER_ATTRIBUTE.createIndex({UM_USER_ID: 16});
+db.UM_USER_ATTRIBUTE.createIndex({mobile: 16,UM_TENANT_ID: 16,UM_PROFILE_ID: 16});
+db.UM_USER_ATTRIBUTE.createIndex({scimId: 16,UM_TENANT_ID: 16,UM_PROFILE_ID: 16});
+db.UM_USER_ATTRIBUTE.createIndex({uid: 16,UM_TENANT_ID: 16,UM_PROFILE_ID: 16},{unique: true});
+db.UM_USER_ATTRIBUTE.createIndex({caseInsensitiveUid: 16,UM_TENANT_ID: 16,UM_PROFILE_ID: 16},{unique: true});
 
 
 db.COUNTERS.insert({
 
     _id: "UM_DIALECT",
 
-    seq: 0
+    seq: NumberLong("0")
 
 });
 db.UM_DIALECT.createIndex({UM_ID: 16,UM_TENANT_ID: 16},{unique: true});
@@ -193,7 +198,7 @@ db.COUNTERS.insert({
 
     _id: "UM_CLAIM",
 
-    seq: 0
+    seq: NumberLong("0")
 
 });
 db.UM_CLAIM.createIndex({UM_ID: 16,UM_TENANT_ID: 16},{unique: true});
@@ -204,7 +209,7 @@ db.COUNTERS.insert({
 
     _id: "UM_PROFILE_CONFIG",
 
-    seq: 0
+    seq: NumberLong("0")
 
 });
 db.UM_PROFILE_CONFIG.createIndex({UM_ID: 16,UM_TENANT_ID: 16},{unique: true});
@@ -214,7 +219,7 @@ db.COUNTERS.insert({
 
     _id: "UM_CLAIM_BEHAVIOR",
 
-    seq: 0
+    seq: NumberLong("0")
 
 });
 db.UM_CLAIM_BEHAVIOR.createIndex({UM_ID: 16,UM_TENANT_ID: 16},{unique: true});
@@ -224,7 +229,7 @@ db.COUNTERS.insert({
 
     _id: "UM_HYBRID_ROLE",
 
-    seq: 0
+    seq: NumberLong("0")
 
 });
 db.UM_HYBRID_ROLE.createIndex({UM_ID: 16,UM_TENANT_ID: 16},{unique: true});
@@ -234,7 +239,7 @@ db.COUNTERS.insert({
 
     _id: "UM_HYBRID_USER_ROLE",
 
-    seq: 0
+    seq: NumberLong("0")
 
 });
 db.UM_HYBRID_USER_ROLE.createIndex({UM_ID: 16,UM_TENANT_ID: 16},{unique: true});
@@ -245,7 +250,7 @@ db.COUNTERS.insert({
 
     _id: "UM_SYSTEM_ROLE",
 
-    seq: 0
+    seq: NumberLong("0")
 
 });
 db.UM_SYSTEM_ROLE.createIndex({UM_ID: 16,UM_TENANT_ID: 16},{unique: true});
@@ -256,7 +261,7 @@ db.COUNTERS.insert({
 
     _id: "UM_SYSTEM_USER_ROLE",
 
-    seq: 0
+    seq: NumberLong("0")
 
 });
 db.UM_SYSTEM_USER_ROLE.createIndex({UM_ID: 16,UM_TENANT_ID: 16},{unique: true});
@@ -267,7 +272,7 @@ db.COUNTERS.insert({
 
     _id: "UM_HYBRID_REMEMBER_ME",
 
-    seq: 0
+    seq: NumberLong("0")
 
 });
 db.UM_HYBRID_REMEMBER_ME.createIndex({UM_ID: 16,UM_TENANT_ID: 16},{unique: true});
