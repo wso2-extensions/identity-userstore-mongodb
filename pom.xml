@@ -242,7 +242,7 @@
         <commons.logging.version>1.2</commons.logging.version>
         <commons.logging.osgi.version.range>[1.1,2.0)</commons.logging.osgi.version.range>
         <!-- JUnit test version -->
-        <junit.version>4.12</junit.version>
+        <junit.version>4.13.1</junit.version>
         <!-- Jasypt version -->
         <jasypt.version>1.9.2</jasypt.version>
         <!-- Mongo Java driver version -->
